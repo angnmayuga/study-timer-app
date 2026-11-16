@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Timer</title>
+<style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+  body { margin: 0; background: #FFF0F5; color: #5A2A3A; display: flex; justify-content: center; padding: 20px; }
+  .app { width: 100%; max-width: 540px; background: white; border-radius: 28px; padding: 28px; border: 2px solid #FFC8DD; box-shadow: 0 10px 30px rgba(255,105,180,0.15); text-align: center; }
+  h1 { margin: 0; color: #E7548A; font-size: 28px; }
+  .subtitle { color: #A06A80; font-size: 15px; margin: 6px 0 18px; font-weight: 600; }
+  .tabs { display: flex; background: #FFE4EF; border-radius: 30px; padding: 5px; margin-bottom: 18px; }
+  .tabs button { flex: 1; border: none; padding: 10px; border-radius: 25px; background: transparent; font-weight: bold; color: #8A4A65; cursor: pointer; }
+  .tabs button.active { background: #FF5C9E; color: white; }
+  .circle { width: 230px; height: 230px; border-radius: 50%; border: 12px solid #FFC8DD; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 18px; background: #FFF7FA; }
+  .time { font-size: 52px; font-weight: bold; color: #C2185B; line-height: 1; }
+  .mode-label { font-size: 13px; color: #A06A80; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+  .task-label { font-size: 13px; color: #E7548A; margin-top: 4px; max-width: 180px; }
+  .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .controls button { padding: 12px 22px; border-radius: 14px; font-weight: bold; cursor: pointer; border: 2px solid #FF8FAB; }
+  .btn-start { background: #FF5C9E; color: white; border-color: #FF5C9E; }
+  .btn-pause { background: #FFE4EF; color: #8A4A65; }
+  .btn-reset { background: white; color: #8A4A65; }
+  .form { text-align: left; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form label { font-size: 12px; font-weight: bold; color: #8A4A65; text-transform: uppercase; }
+  .form input { width: 100%; padding: 11px; margin-top: 5px; border: 2px solid #FFC8DD; border-radius: 12px; background: #FFF7FA; outline: none; color: #5A2A3A; }
+  .form input:focus { border-color: #FF5C9E; background: white; }
+  .full { grid-column: 1 / -1; }
+  .section-title { grid-column: 1 / -1; font-size: 12px; font-weight: bold; color: #E7548A; margin: 6px 0 -4px; text-transform: uppercase; letter-spacing: .5px; }
+  .stats { display: flex; gap: 12px; margin: 20px 0; }
+  .stat { flex: 1; background: #FFF0F5; border-radius: 16px; padding: 12px; }
+  .stat b { display: block; font-size: 22px; color: #D6336C; }
+  .stat span { font-size: 12px; color: #8A4A65; }
+  .history { text-align: left; }
+  .history h2 { color: #C2185B; font-size: 20px; margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: #8A4A65; padding: 8px 4px; border-bottom: 2px solid #FFE0EC; }
+  td { padding: 8px 4px; border-bottom: 1px solid #FFF0F5; }
+  .clear { background: none; border: none; color: #C2185B; text-decoration: underline; cursor: pointer; margin-top: 10px; font-size: 13px; }
+  .empty { color: #A06A80; font-size: 14px; padding: 12px 0; }
+  /* ALARM POPUP */
+  .alarm-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(90,42,58,0.45); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
+  .alarm-overlay.show { display: flex; }
+  .alarm-box { background: white; border-radius: 28px; padding: 32px 28px; max-width: 360px; width: 100%; text-align: center; border: 3px solid #FFC8DD; box-shadow: 0 20px 50px rgba(0,0,0,0.25); animation: pop 0.3s ease; }
+  @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .alarm-box .bell { font-size: 48px; margin-bottom: 8px; animation: ring 1s infinite; display: inline-block; }
+  @keyframes ring { 0%,100% { transform: rotate(0); } 15% { transform: rotate(15deg); } 30% { transform: rotate(-15deg); } 45% { transform: rotate(10deg); } 60% { transform: rotate(-10deg); } 75% { transform: rotate(5deg); } }
+  .alarm-box h2 { margin: 0 0 8px; color: #C2185B; font-size: 24px; }
+  .alarm-box p { color: #8A4A65; font-size: 14px; line-height: 1.5; margin: 0 0 20px; }
+  .alarm-ok { width: 100%; padding: 14px; border: none; border-radius: 14px; background: #FF5C9E; color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+  .alarm-ok:hover { background: #E7548A; }
+  .alarm-note { font-size: 12px; color: #A06A80; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Study Timer</h1>
+  <p class="subtitle">Focus now, slay later — you got this! 💖</p>
+
+  <div class="tabs">
+    <button id="focusTab" class="active" onclick="setMode('focus')">Focus</button>
+    <button id="breakTab" onclick="setMode('break')">Break</button>
+  </div>
+
+  <div class="circle">
+    <div class="time" id="timeDisplay">25:00</div>
+    <div class="mode-label" id="modeLabel">FOCUS MODE</div>
+    <div class="task-label" id="taskLabel"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-start" onclick="startTimer()">Start</button>
+    <button class="btn-pause" onclick="pauseTimer()">Pause</button>
+    <button class="btn-reset" onclick="resetTimer()">Reset</button>
+  </div>
+
+  <div class="form">
+    <div class="full">
+      <label>What are you working on? (optional)</label>
+      <input id="taskInput" placeholder="e.g. Chapter 5, Thesis, Review..." oninput="updateTaskLabel()">
+    </div>
+    <div class="section-title">⏰ Focus Time</div>
+    <div><label>Focus Minutes</label><input id="focusMin" type="number" value="25" min="0" max="180" onchange="resetTimer()"></div>
+    <div><label>Focus Seconds</label><input id="focusSec" type="number" value="0" min="0" max="59" onchange="resetTimer()"></div>
+    <div class="section-title">☕ Break Time</div>
+    <div><label>Break Minutes</label><input id="breakMin" type="number" value="5" min="0" max="60" onchange="resetTimer()"></div>
+    <div><label>Break Seconds</label><input id="breakSec" type="number" value="0" min="0" max="59" onchange="resetTimer()"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="totalSessions">0</b><span>Total Sessions</span></div>
+    <div class="stat"><b id="focusMinutes">0</b><span>Focus Minutes</span></div>
+    <div class="stat"><b id="streak">0</b><span>Streak</span></div>
+  </div>
+
+  <div class="history">
+    <h2>History</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Focus On</th><th>Type</th><th>Duration</th></tr></thead>
+      <tbody id="historyBody"></tbody>
+    </table>
+    <div id="emptyHistory" class="empty">No sessions yet. Start your first focus!</div>
+    <button class="clear" onclick="clearHistory()">Clear history</button>
+  </div>
+</div>
+
+<!-- CALM ALARM POPUP -->
+<div class="alarm-overlay" id="alarmOverlay">
+  <div class="alarm-box">
+    <div class="bell">🔔</div>
+    <h2 id="alarmTitle">Time's Up!</h2>
+    <p id="alarmMsg">Focus done! Take a break 💖</p>
+    <button class="alarm-ok" onclick="dismissAlarm()">Done</button>
+    
+  </div>
+</div>
+
+<script>
+let mode = 'focus';
+let totalSeconds = 25 * 60;
+let remaining = totalSeconds;
+let timer = null;
+let history = JSON.parse(localStorage.getItem('studyHistory') || '[]');
+let audioCtx = null;
+let alarmInterval = null;
+let pendingModeAfterAlarm = null;
+
+function getTask(){ return document.getElementById('taskInput').value.trim(); }
+function updateTaskLabel(){ document.getElementById('taskLabel').textContent = getTask() ? '✨ ' + getTask() : ''; }
+function getFocusTotal(){
+  let m = parseInt(document.getElementById('focusMin').value) || 0;
+  let s = parseInt(document.getElementById('focusSec').value) || 0;
+  let total = m * 60 + s;
+  return total > 0 ? total : 60;
+}
+function getBreakTotal(){
+  let m = parseInt(document.getElementById('breakMin').value) || 0;
+  let s = parseInt(document.getElementById('breakSec').value) || 0;
+  let total = m * 60 + s;
+  return total > 0 ? total : 60;
+}
+function formatDuration(totalSec){
+  let m = Math.floor(totalSec / 60);
+  let s = totalSec % 60;
+  if(m === 0) return s + ' sec';
+  if(s === 0) return m + ' min';
+  return m + ' min ' + s + ' sec';
+}
+
+// CALM ALARM - soft, gentle, loops until Okay
+function playCalmChime(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    let now = audioCtx.currentTime;
+    // Calm pattern: soft high chime - pause - soft low chime, like a meditation bell
+    let notes = [
+      { freq: 880, time: 0, dur: 0.9 },    // A5 - soft
+      { freq: 659.25, time: 0.55, dur: 0.9 }, // E5 - soft
+      { freq: 880, time: 1.1, dur: 1.1 },  // A5 again, longer
+    ];
+    notes.forEach(n => {
+      let osc = audioCtx.createOscillator();
+      let gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = n.freq;
+      osc.type = 'sine';
+      let start = now + n.time;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + n.dur);
+      osc.start(start); osc.stop(start + n.dur + 0.05);
+    });
+  }catch(e){ console.log('Audio not supported'); }
+}
+function startAlarm(){
+  playCalmChime();
+  // Repeat every 2.2 seconds - CONTINUOUS until Okay
+  alarmInterval = setInterval(playCalmChime, 2200);
+}
+function stopAlarm(){
+  if(alarmInterval){ clearInterval(alarmInterval); alarmInterval = null; }
+}
+function showAlarm(title, msg, nextMode){
+  document.getElementById('alarmTitle').textContent = title;
+  document.getElementById('alarmMsg').textContent = msg;
+  document.getElementById('alarmOverlay').classList.add('show');
+  pendingModeAfterAlarm = nextMode;
+  startAlarm();
+}
+function dismissAlarm(){
+  stopAlarm();
+  document.getElementById('alarmOverlay').classList.remove('show');
+  if(pendingModeAfterAlarm){
+    setMode(pendingModeAfterAlarm);
+    pendingModeAfterAlarm = null;
+  }
+}
+
+function setMode(newMode){
+  mode = newMode;
+  document.getElementById('focusTab').classList.toggle('active', mode === 'focus');
+  document.getElementById('breakTab').classList.toggle('active', mode === 'break');
+  document.getElementById('modeLabel').textContent = mode === 'focus' ? 'FOCUS MODE' : 'BREAK TIME';
+  pauseTimer(); resetTimer();
+}
+function format(s){
+  let m = Math.floor(s / 60); let sec = s % 60;
+  return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+function updateDisplay(){ document.getElementById('timeDisplay').textContent = format(remaining); }
+function startTimer(){
+  if(timer) return;
+  if(!audioCtx){ try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} }
+  timer = setInterval(() => {
+    remaining--;
+    updateDisplay();
+    if(remaining <= 0){
+      clearInterval(timer); timer = null;
+      saveSession();
+      if(mode === 'focus'){
+        showAlarm("Time's Up! 💖", "Focus done! Take a break, you slayed it!", 'break');
+      } else {
+        showAlarm("Break Over! ✨", "Break over! Back to focus, you got this!", 'focus');
+      }
+    }
+  }, 1000);
+}
+function pauseTimer(){ if(timer){ clearInterval(timer); timer = null; } }
+function resetTimer(){
+  pauseTimer();
+  totalSeconds = mode === 'focus' ? getFocusTotal() : getBreakTotal();
+  remaining = totalSeconds; updateDisplay();
+}
+function saveSession(){
+  let now = new Date();
+  let total = mode === 'focus' ? getFocusTotal() : getBreakTotal();
+  let task = getTask() || 'Focus Session';
+  history.unshift({ date: now.toLocaleDateString(), task: task, type: mode === 'focus' ? 'Focus' : 'Break', duration: formatDuration(total), totalSec: total });
+  localStorage.setItem('studyHistory', JSON.stringify(history));
+  renderHistory();
+}
+function renderHistory(){
+  let body = document.getElementById('historyBody');
+  document.getElementById('emptyHistory').style.display = history.length === 0 ? 'block' : 'none';
+  body.innerHTML = history.map(h => `<tr><td>${h.date}</td><td>${h.task}</td><td>${h.type}</td><td>${h.duration}</td></tr>`).join('');
+  let focusSessions = history.filter(h => h.type === 'Focus');
+  document.getElementById('totalSessions').textContent = focusSessions.length;
+  let totalSecAll = 0;
+  focusSessions.forEach(h => totalSecAll += h.totalSec || (parseInt(h.duration) || 0) * 60);
+  document.getElementById('focusMinutes').textContent = Math.round(totalSecAll / 60);
+  document.getElementById('streak').textContent = focusSessions.length;
+}
+function clearHistory(){
+  if(!confirm('Clear all history?')) return;
+  history = []; localStorage.removeItem('studyHistory'); renderHistory();
+}
+updateTaskLabel(); resetTimer(); renderHistory();
+</script>
+</body>
+</html>
