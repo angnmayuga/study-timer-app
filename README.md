@@ -23,6 +23,6 @@ A simple mobile-friendly study timer app for students to stay focused using Pomo
 - LocalStorage for History
 
 ## Author
-**Name:** Angel Lyka
-**Program:** BSINTE
+**Name:** Angel Lyka Mayuga
+**Section:** BSINTE 2A
 **Project:** Study Timer - Final Project
